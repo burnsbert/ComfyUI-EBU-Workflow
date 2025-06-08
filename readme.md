@@ -1,4 +1,4 @@
-# ComfyUI-EBU-ScalingTools
+# ComfyUI-EBU-Workflow
 
 A collection of custom ComfyUI nodes to improve your workflow, including nodes to assist in upscaling and file naming.
 
