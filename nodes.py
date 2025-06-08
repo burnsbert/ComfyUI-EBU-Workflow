@@ -1,4 +1,5 @@
 import math
+from datetime import datetime
 
 class EbuScalingResolution:
     aspect_ratios = {
@@ -102,12 +103,86 @@ class EbuScalingTile:
         return new_width, new_height
 
 
+
+class EbuGetImageAspectRatio:
+    ASPECT_RATIOS = {
+        "1:1": 1.0,
+        "6:5": 1.2,
+        "5:4": 1.25,
+        "4:3": 1.333,
+        "3:2": 1.5,
+        "2:1": 2.0,
+        "16:10": 1.6,
+        "16:9": 1.777,
+        "5:6": 0.833,
+        "4:5": 0.8,
+        "3:4": 0.75,
+        "2:3": 0.666,
+        "10:16": 0.625,
+        "9:16": 0.5625
+    }
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE",)
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("aspect_ratio",)
+    FUNCTION = "get_aspect_ratio"
+    CATEGORY = "Resolution"
+
+    def get_aspect_ratio(self, image):
+        img = image[0]  # Access the first image tensor
+        height, width = img.shape[:2]  # Extract height and width
+
+        ratio = width / height
+        tolerance = 0.08  # 8% tolerance
+
+        closest = min(self.ASPECT_RATIOS.items(), key=lambda x: abs(x[1] - ratio))
+        label, value = closest
+        diff = abs(value - ratio)
+
+        print(f"DEBUG: width={width}, height={height}, ratio={ratio:.4f}, closest={label} ({value}), diff={diff:.4f}")
+
+        if diff <= tolerance:
+            return (label,)
+        else:
+            return ("Unknown",)
+
+class EbuUniqueFileName:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "str": ("STRING", {"default": "file"}),
+                "join_str": ("STRING", {"default": "-"}),
+                "seed": ("INT", {"default": 0})  # ensures rerun; not used directly
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("unique_filename",)
+    FUNCTION = "generate_filename"
+    CATEGORY = "Utility"
+
+    def generate_filename(self, str, join_str, seed):
+        now = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        return (f"{str}{join_str}{now}",)
+
 NODE_CLASS_MAPPINGS = {
+    "EbuGetImageAspectRatio": EbuGetImageAspectRatio,
     "EbuScalingResolution": EbuScalingResolution,
-    "EbuScalingTile": EbuScalingTile
+    "EbuScalingTile": EbuScalingTile,
+    "EbuUniqueFileName": EbuUniqueFileName
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
+    "EbuGetImageAspectRatio": "EBU Get Image Aspect Ratio",
     "EbuScalingResolution": "EBU Scaling Resolution",
-    "EbuScalingTile": "EBU Scaling Tile"
+    "EbuScalingTile": "EBU Scaling Tile",
+    "EbuUniqueFileName": "EBU Unique File Name"
 }
