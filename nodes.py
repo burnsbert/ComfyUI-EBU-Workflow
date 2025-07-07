@@ -191,7 +191,7 @@ class EbuAppendToFile:
     RETURN_TYPES = ()
     FUNCTION = "append_to_file"
     OUTPUT_NODE = True
-    CATEGORY = "EWB"
+    CATEGORY = "Utility"
 
     def append_to_file(self, string_to_append, directory_name, file_name, overwrite):
         os.makedirs(directory_name, exist_ok=True)
@@ -218,7 +218,7 @@ class EbuReadFromFile:
     RETURN_NAMES = ("file_contents",)
     FUNCTION = "read_from_file"
     OUTPUT_NODE = True
-    CATEGORY = "EBU"
+    CATEGORY = "Utility"
 
     def read_from_file(self, directory_name, file_name):
         full_path = os.path.join(directory_name, file_name)
@@ -254,7 +254,7 @@ class EbuFileListCache:
     RETURN_NAMES = ("selected_items", "input_items", "combined_items")
     FUNCTION = "process_file_list_cache"
     OUTPUT_NODE = True
-    CATEGORY = "EBU"
+    CATEGORY = "Utility"
 
     def process_file_list_cache(self, directory_name, file_name, num_return_items, input_items, limit_list_size):
         os.makedirs(directory_name, exist_ok=True)
@@ -317,7 +317,7 @@ class EbuEncodeNewLines:
     RETURN_NAMES = ("encoded_text",)
     FUNCTION = "encode"
     OUTPUT_NODE = True
-    CATEGORY = "EBU"
+    CATEGORY = "Utility"
 
     def encode(self, text, new_line_encoding):
         encoded = text.replace("\n", new_line_encoding)
@@ -337,7 +337,7 @@ class EbuDecodeNewLines:
     RETURN_NAMES = ("decoded_text",)
     FUNCTION = "decode"
     OUTPUT_NODE = True
-    CATEGORY = "EBU"
+    CATEGORY = "Utility"
 
     def decode(self, encoded_text, new_line_encoding):
         decoded = encoded_text.replace(new_line_encoding, "\n")
