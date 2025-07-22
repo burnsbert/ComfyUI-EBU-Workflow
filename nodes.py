@@ -246,7 +246,8 @@ class EbuFileListCache:
                 "file_name": ("STRING", {"default": "output.txt"}),
                 "num_return_items": ("INT", {"default": 5, "min": 0, "max": 1000}),
                 "input_items": ("STRING", {"multiline": True}),
-                "limit_list_size": ("INT", {"default": 100, "min": 1, "max": 10000})
+                "limit_list_size": ("INT", {"default": 100, "min": 1, "max": 10000}),
+                "seed": ("INT", {"default": 0, "max": 0xffffffffffffffff})
             }
         }
 
@@ -256,7 +257,7 @@ class EbuFileListCache:
     OUTPUT_NODE = True
     CATEGORY = "Utility"
 
-    def process_file_list_cache(self, directory_name, file_name, num_return_items, input_items, limit_list_size):
+    def process_file_list_cache(self, directory_name, file_name, num_return_items, input_items, limit_list_size, seed):
         os.makedirs(directory_name, exist_ok=True)
         full_path = os.path.join(directory_name, file_name)
         backup_path = full_path + ".bk"

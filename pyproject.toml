@@ -1,7 +1,7 @@
 [project]
 name = "ComfyUI_EBU_Workflow"
 description = "This ComfyUI extension provides a suite of custom nodes for assisting with your workflow with a focus on resolution, upscaling, and file naming"
-version = "1.0.2"
+version = "1.0.3"
 authors = [
     {name = "burnsbert"}
 ]
