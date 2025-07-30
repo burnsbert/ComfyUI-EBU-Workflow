@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 import shutil
 import random
+from typing import Optional, List
 
 class EbuScalingResolution:
     aspect_ratios = {
@@ -233,21 +234,17 @@ class EbuReadFromFile:
         print(f"Read from file: {full_path}")
         return (contents,)
 
-import os
-import random
-import shutil
-
 class EbuFileListCache:
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
                 "directory_name": ("STRING", {"default": "store"}),
-                "file_name": ("STRING", {"default": "output.txt"}),
+                "file_name":      ("STRING", {"default": "output.txt"}),
                 "num_return_items": ("INT", {"default": 5, "min": 0, "max": 1000}),
-                "input_items": ("STRING", {"multiline": True}),
+                "input_items":    ("STRING", {"multiline": True}),
                 "limit_list_size": ("INT", {"default": 100, "min": 1, "max": 10000}),
-                "seed": ("INT", {"default": 0, "max": 0xffffffffffffffff})
+                "seed":           ("INT", {"default": 0, "max": 0xffffffffffffffff})
             }
         }
 
@@ -257,51 +254,80 @@ class EbuFileListCache:
     OUTPUT_NODE = True
     CATEGORY = "Utility"
 
-    def process_file_list_cache(self, directory_name, file_name, num_return_items, input_items, limit_list_size, seed):
+    def process_file_list_cache(self,
+                                directory_name: str,
+                                file_name: str,
+                                num_return_items: int,
+                                input_items: str,
+                                limit_list_size: int,
+                                seed: Optional[int] = None
+                                ) -> List[str]:
+        """
+        Reads directory_name/file_name, merges any new lines from input_items,
+        shuffles & trims to limit_list_size, optionally rewrites the file,
+        then returns a random sample of num_return_items.
+        """
+        # Ensure storage directory exists
         os.makedirs(directory_name, exist_ok=True)
-        full_path = os.path.join(directory_name, file_name)
+        full_path   = os.path.join(directory_name, file_name)
         backup_path = full_path + ".bk"
 
-        # Load current file contents
+        # 1. Load existing lines
         current_lines = set()
         if os.path.exists(full_path):
-            with open(full_path, "r") as f:
+            with open(full_path, "r", encoding="utf-8") as f:
                 current_lines = {line.strip() for line in f if line.strip()}
 
-        # Handle blank input: return random items from current file without modifying it
+        # 2. If no new input → just sample & return, no file changes
         if not input_items.strip():
-            selected_items = random.sample(list(current_lines), min(num_return_items, len(current_lines)))
+            selected = random.sample(
+                list(current_lines),
+                min(num_return_items, len(current_lines))
+            )
             return (
-                "\n".join(selected_items),
-                "",
-                "\n".join(selected_items)
+                "\n".join(selected),
+                "",                         # no input_items
+                "\n".join(selected)         # combined == selected
             )
 
-        # Otherwise, parse input normally
-        input_lines = [line.strip() for line in input_items.splitlines() if line.strip()]
+        # 3. Parse & merge new input lines
+        input_lines = [
+            line.strip()
+            for line in input_items.splitlines()
+            if line.strip()
+        ]
         input_set = set(input_lines)
 
-        # Combine and shuffle
-        combined_set = current_lines.union(input_set)
-        combined_list = list(combined_set)
+        # 4. Combine, optionally reseed, then shuffle
+        combined = current_lines.union(input_set)
+        combined_list = list(combined)
+        if seed is not None:
+            random.seed(seed)
         random.shuffle(combined_list)
-        trimmed_list = combined_list[:limit_list_size]
 
-        # Backup and save new file
+        # 5. Trim to limit_list_size
+        trimmed = combined_list[:limit_list_size]
+
+        # 6. Backup old file & rewrite with trimmed list
         if os.path.exists(full_path):
             shutil.copy2(full_path, backup_path)
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(trimmed) + "\n")
 
-        with open(full_path, "w") as f:
-            f.write("\n".join(trimmed_list) + "\n")
+        # 7. From the trimmed list, pick new random sample (excluding the inputs)
+        available = list(set(trimmed) - input_set)
+        selected  = random.sample(
+            available,
+            min(num_return_items, len(available))
+        )
 
-        # Return random items (excluding input)
-        available_for_selection = list(set(trimmed_list) - input_set)
-        selected_items = random.sample(available_for_selection, min(num_return_items, len(available_for_selection)))
+        # 8. Build the combined output (inputs first, then selected)
+        combined_output = input_lines + selected
 
         return (
-            "\n".join(selected_items),
+            "\n".join(selected),
             "\n".join(input_lines),
-            "\n".join(input_lines + selected_items)
+            "\n".join(combined_output)
         )
 
 class EbuEncodeNewLines:
