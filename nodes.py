@@ -370,6 +370,66 @@ class EbuDecodeNewLines:
         decoded = encoded_text.replace(new_line_encoding, "\n")
         return (decoded,)
 
+class EbuStringWaitForImage:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "input_string": ("STRING", {"multiline": True}),
+                "wait_for_image": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("output_string",)
+    FUNCTION = "passthrough"
+    CATEGORY = "Utility"
+
+    def passthrough(self, input_string, wait_for_image):
+        if wait_for_image is None or len(wait_for_image) == 0:
+            raise ValueError("Image not loaded. Cannot proceed.")
+        return (input_string,)
+
+class EbuImageWaitForImage:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "input_image": ("IMAGE",),
+                "wait_for_image": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("output_image",)
+    FUNCTION = "passthrough"
+    CATEGORY = "Utility"
+
+    def passthrough(self, input_image, wait_for_image):
+        if wait_for_image is None or len(wait_for_image) == 0:
+            raise ValueError("Image not loaded. Cannot proceed.")
+        return (input_image,)
+
+class EbuModelWaitForImage:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "input_model": ("MODEL",),
+                "wait_for_image": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("MODEL",)
+    RETURN_NAMES = ("output_model",)
+    FUNCTION = "passthrough"
+    CATEGORY = "Utility"
+
+    def passthrough(self, input_model, wait_for_image):
+        if wait_for_image is None or len(wait_for_image) == 0:
+            raise ValueError("Image not loaded. Cannot proceed.")
+        return (input_model,)
+
 NODE_CLASS_MAPPINGS = {
     "EbuGetImageAspectRatio": EbuGetImageAspectRatio,
     "EbuScalingResolution": EbuScalingResolution,
@@ -379,7 +439,10 @@ NODE_CLASS_MAPPINGS = {
     "EbuReadFromFile": EbuReadFromFile,
     "EbuFileListCache": EbuFileListCache,
     "EbuEncodeNewLines": EbuEncodeNewLines,
-    "EbuDecodeNewLines": EbuDecodeNewLines
+    "EbuDecodeNewLines": EbuDecodeNewLines,
+    "EbuStringWaitForImage": EbuStringWaitForImage,
+    "EbuImageWaitForImage": EbuImageWaitForImage,
+    "EbuModelWaitForImage": EbuModelWaitForImage,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -391,6 +454,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "EbuReadFromFile": "EBU Read From File",
     "EbuFileListCache": "EBU File List Cache",
     "EbuEncodeNewLines": "EBU Encode New Lines",
-    "EbuDecodeNewLines": "EBU Decode New Lines"
+    "EbuDecodeNewLines": "EBU Decode New Lines",
+    "EbuStringWaitForImage": "EBU String Wait For Image",
+    "EbuImageWaitForImage": "EBU Image Wait For Image",
+    "EbuModelWaitForImage": "EBU Model Wait For Image",
 }
 
