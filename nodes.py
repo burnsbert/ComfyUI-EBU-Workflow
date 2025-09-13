@@ -39,7 +39,7 @@ class EbuScalingResolution:
                 "other_width": ("INT", {"default": 1024, "min": 64, "max": 8192, "step": 8, "display": "number"}),
                 "other_height": ("INT", {"default": 1024, "min": 64, "max": 8192, "step": 8, "display": "number"}),
                 "mode": (["Landscape", "Profile"], {"default": "Landscape"}),
-                "upscale_by": ("FLOAT", {"default": 1.5, "min": 1.0, "max": 10.0, "step": 0.5, "display": "number"})
+                "upscale_by": ("FLOAT", {"default": 1.5, "min": 1.0, "max": 10.0, "step": 0.05, "display": "number"})
             }
         }
 
@@ -107,7 +107,6 @@ class EbuScalingTile:
         return new_width, new_height
 
 
-
 class EbuGetImageAspectRatio:
     ASPECT_RATIOS = {
         "1:1": 1.0,
@@ -156,6 +155,67 @@ class EbuGetImageAspectRatio:
             return (label,)
         else:
             return ("Unknown",)
+
+
+class EbuGetImageAspectRatioFromImage:
+    ASPECT_RATIOS = {
+        "1:1": 1.0,
+        "6:5": 1.2,
+        "5:4": 1.25,
+        "4:3": 1.333,
+        "3:2": 1.5,
+        "2:1": 2.0,
+        "16:10": 1.6,
+        "16:9": 1.777,
+        "5:6": 0.833,
+        "4:5": 0.8,
+        "3:4": 0.75,
+        "2:3": 0.666,
+        "10:16": 0.625,
+        "9:16": 0.5625
+    }
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "delimiter": ("STRING", {"default": ":"}),
+                "tolerance": ("FLOAT", {"default": 0.08, "min": 0.0, "max": 1.0, "step": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING", "STRING", "INT", "INT",)
+    RETURN_NAMES = ("aspect_ratio", "resolution", "width", "height",)
+    FUNCTION = "get_aspect_ratio_from_image"
+    CATEGORY = "Resolution"
+
+    def get_aspect_ratio_from_image(self, image, delimiter, tolerance):
+        # Access the first image tensor and get its dimensions
+        img = image[0]
+        height, width = img.shape[:2]
+
+        # Calculate the aspect ratio
+        ratio = width / height
+
+        # Find the closest aspect ratio from the predefined list
+        closest = min(self.ASPECT_RATIOS.items(), key=lambda x: abs(x[1] - ratio))
+        label, value = closest
+        diff = abs(value - ratio)
+
+        print(f"DEBUG: width={width}, height={height}, ratio={ratio:.4f}, closest={label} ({value}), diff={diff:.4f}")
+
+        resolution_str = f"{width}{delimiter}{height}"
+
+        # Check if the closest match is within the specified tolerance
+        if diff <= tolerance:
+            # Replace the default delimiter with the user-specified one
+            if delimiter != ":":
+                label = label.replace(":", delimiter)
+            return (label, resolution_str, width, height,)
+        else:
+            return ("custom", resolution_str, width, height,)
+
 
 class EbuUniqueFileName:
     @classmethod
@@ -430,6 +490,49 @@ class EbuModelWaitForImage:
             raise ValueError("Image not loaded. Cannot proceed.")
         return (input_model,)
 
+class EbuComputeImageUpscale:
+    """
+    Computes the upscale factor and new dimensions for an image
+    to meet minimum width and height requirements.
+    """
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "min_width": ("INT", {"default": 2560, "min": 0, "max": 16384, "step": 1, "display": "number"}),
+                "min_height": ("INT", {"default": 1440, "min": 0, "max": 16384, "step": 1, "display": "number"}),
+            }
+        }
+
+    RETURN_TYPES = ("FLOAT", "INT", "INT",)
+    RETURN_NAMES = ("upscale_by", "upscaled_width", "upscaled_height",)
+    FUNCTION = "compute_upscale"
+    CATEGORY = "Resolution"
+
+    def compute_upscale(self, image, min_width, min_height):
+        # Access the first image tensor and get its dimensions
+        img = image[0]
+        original_height, original_width = img.shape[:2]
+
+        # Calculate upscale factors for width and height
+        upscale_by_width = 1.0
+        if min_width > 0:
+            upscale_by_width = min_width / original_width
+
+        upscale_by_height = 1.0
+        if min_height > 0:
+            upscale_by_height = min_height / original_height
+
+        # The final upscale factor is the maximum of the two to satisfy both conditions
+        upscale_by = max(upscale_by_width, upscale_by_height, 1.0)
+
+        # Calculate the upscaled dimensions, rounded up to the nearest integer
+        upscaled_width = math.ceil(original_width * upscale_by)
+        upscaled_height = math.ceil(original_height * upscale_by)
+
+        return (upscale_by, upscaled_width, upscaled_height,)
+
 NODE_CLASS_MAPPINGS = {
     "EbuGetImageAspectRatio": EbuGetImageAspectRatio,
     "EbuScalingResolution": EbuScalingResolution,
@@ -443,6 +546,8 @@ NODE_CLASS_MAPPINGS = {
     "EbuStringWaitForImage": EbuStringWaitForImage,
     "EbuImageWaitForImage": EbuImageWaitForImage,
     "EbuModelWaitForImage": EbuModelWaitForImage,
+    "EbuGetImageAspectRatioFromImage": EbuGetImageAspectRatioFromImage,
+    "EbuComputeImageUpscale": EbuComputeImageUpscale,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -458,5 +563,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "EbuStringWaitForImage": "EBU String Wait For Image",
     "EbuImageWaitForImage": "EBU Image Wait For Image",
     "EbuModelWaitForImage": "EBU Model Wait For Image",
+    "EbuGetImageAspectRatioFromImage": "EBU Get Image Aspect Ratio From Image",
+    "EbuComputeImageUpscale": "EBU Compute Image Upscale",
 }
-
